@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Robot</title>
+
+	<script type="text/javascript" src="js/jquery/jquery.min.js"></script>
+
+	<link rel="stylesheet" href="js/bootstrap/bootstrap.min.css">
+	<script type="text/javascript" src="js/bootstrap/bootstrap.min.js"></script>
+
+	<script type="text/javascript" src="js/creer_page/creer_page.js"></script>
+
+	<link rel="stylesheet" href="css/styles.css">
+
+	<script type="text/javascript">
+
+		$(document).ready(function () {
+			console.log("jQuery OK")
+			creer_page() // création de la page
+			maj_etat_arduino()
+
+		})
+
+		// cmd
+		// envoi d'une commande par XBee
+		// on envoie une requête HTTP au serveur
+		// le paramètre de la requête est la commande à envoyer au robot
+
+
+		function cmd(id,val) {
+			var v = val
+			if (id != null) {
+				console.log("cmd : id = "+id+" val = "+val)
+				var v = val.replace(/vitesse/g,$("#"+id+"_vitesse").val())
+				v = v.replace(/duree/g,$("#"+id+"_duree").val())
+				console.log("arduino : "+v)
+			}
+
+			$.ajax({
+				method: "post",
+				url: "cmd",
+				data: {
+					val: v,
+				},
+				dataType: "json",
+				success: function (data) {
+					//console.log("cmd = " + JSON.stringify(data))
+					//afficherDistances(data.dist)
+					// if (data.dist.length > 0) {
+					// 	var mess = "A : " + data.dist[0] + " (" + data.dist[1]
+					// 	mess += ") G : " + data.dist[2] + " (" + data.dist[3]
+					// 	mess += ") R : " + data.dist[4] + " (" + data.dist[5]
+					// 	mess += ") D : " + data.dist[6] + " (" + data.dist[7] + ")<br><br>"
+					// 	$("#dist").html(mess)
+					// }
+				}
+			})
+
+		}
+		
+		const D_AVANT = 0
+		const D_GAUCHE = 2
+		const D_ARRIERE = 4
+		const D_DROITE = 6
+
+		function maj_etat_arduino() {
+			console.log("maj_etat_arduino")
+			setTimeout(() => {
+				maj_etat_arduino()
+			}, 1000)
+			
+			$.ajax({
+				method: "post",
+				url: "etat_arduino",
+				dataType: "json",
+				success: function (data) {
+					console.log("etat_arduino = " + JSON.stringify(data.etat))
+					$("#dist_avant").html(data.etat.d[D_AVANT]+" ("+data.etat.d[D_AVANT+1]+")")
+					$("#dist_gauche").html(data.etat.d[D_GAUCHE]+" ("+data.etat.d[D_GAUCHE+1]+")")
+					$("#dist_arriere").html(data.etat.d[D_ARRIERE]+" ("+data.etat.d[D_ARRIERE+1]+")")
+					$("#dist_droite").html(data.etat.d[D_DROITE]+" ("+data.etat.d[D_DROITE+1]+")")
+				}
+			})
+		}
+		
+		function mission(nom,param1,param2) {
+			console.log("mission nom = "+nom)
+
+			let p1 = ""
+			let p2 = ""
+
+			if (typeof param1 !== 'undefined') { // comparaison stricte,, comparaison du type et de la valeur
+				console.log("param1 défini val = "+param1)
+				p1 = param1
+			}
+
+			if (typeof param2 !== 'undefined') { // comparaison stricte,, comparaison du type et de la valeur
+				console.log("param2 défini val = "+param2)
+				p2 = param2
+			}
+
+			$.ajax({
+				method: "post",
+				url: "mission",
+				data : {
+					nom : nom,
+					param1 : p1,
+					param2 : p2,
+				},
+				dataType: "json",
+				success: function (data) {
+					console.log("res = " + JSON.stringify(data))
+				}
+			})
+
+		}
+
+
+	</script>
+</head>
+
+<body>
+
+	<div id="template"></div>
+
+	<div id="content" style="display:none;">
+
+		<h3>Robot</h3>
+
+		<br>
+
+		<button onclick="cmd('avancer','[[t duree][mda vitesse][mga vitesse]]')">Avancer</button>
+		v : <input id="avancer_vitesse" type="text" value="200" style="width: 3rem;">
+		ms : <input id="avancer_duree" type="text" value="5000" style="width: 4rem;">
+		<!-- avancer à la vitesse 200 pendant 50 ms -->
+		
+		<br>
+		<br>
+
+		<button onclick="cmd('reculer','[[t duree][mdr vitesse][mgr vitesse]]')">Reculer</button>
+		v : <input id="reculer_vitesse" type="text" value="200" style="width: 3rem;">
+		ms : <input id="reculer_duree" type="text" value="5000" style="width: 4rem;">
+		<!-- reculer à la vitesse 200 pendant 50 ms -->
+
+		<br>
+		<br>
+
+		<button onclick="cmd('droite','[[t duree][mda 0][mga vitesse]]')">Droite</button>
+		v : <input id="droite_vitesse" type="text" value="200" style="width: 3rem;">
+		ms : <input id="droite_duree" type="text" value="5000" style="width: 4rem;">
+		<!-- tourner à droite à la vitesse 200 pendant 50 ms -->
+
+		<br>
+		<br>
+
+		<button onclick="cmd('gauche','[[t duree][mda vitesse][mga 0]]')">Gauche</button>
+		v : <input id="gauche_vitesse" type="text" value="200" style="width: 3rem;">
+		ms : <input id="gauche_duree" type="text" value="5000" style="width: 4rem;">
+		<!-- tourner à gauche à la vitesse 200 pendant 50 ms -->
+
+		<br>
+		<br>
+
+		<button onclick="cmd(null,'[[n 0]]')">NOP</button>
+
+		<br><br>
+
+		<h3>Missions</h3>
+
+		<br>
+
+		<button onclick="mission('avancer_obstacle',$('#avancer_obstacle_dist').val())">Avancer jusqu'à obstacle</button>
+		distance en mm : <input id="avancer_obstacle_dist" type="text" value="200" style="width: 3rem;">
+		<br><br>
+
+		<button onclick="mission('longer',$('#longer_dist').val())">Longer un mur situé à gauche</button>
+		distance en mm : <input id="longer_dist" type="text" value="300" style="width: 3rem;">
+		<br><br>
+
+		<button onclick="mission('tourner_mur',$('#tour_mur_dist').val())">Tourner devant un mur</button>
+		distance en mm : <input id="tour_mur_dist" type="text" value="300" style="width: 3rem;">
+		<br><br>
+
+		<h3>Mission complexe</h3>
+
+		<br>
+
+		<button onclick="mission('tour',$('#tour_dist').val())">Tour pièce</button>
+		distance en mm : <input id="tour_dist" type="text" value="300" style="width: 3rem;">
+		<br><br>
+
+		<br>
+		Avant : <span id = "dist_avant"></span><br>
+		Gauche : <span id = "dist_gauche"></span><br>
+		Arrière : <span id = "dist_arriere"></span><br>
+		Droite : <span id = "dist_droite"></span><br>
+
+		Messages Arduino <br> <span id = "arduino"></span>
+
+	</div>
+
+</body>
+
+</html>
